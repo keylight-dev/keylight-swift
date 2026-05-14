@@ -28,6 +28,3 @@ targets: [
 
 See the full integration guide at [keylight.dev/docs/integration-swift](https://keylight.dev/docs/integration-swift).
 
-## Demo
-
-A minimal SwiftUI macOS app is included under `Demo/KeylightDemo`. Open in Xcode and run — it connects to the Keylight live service with a dry-run test tenant.
