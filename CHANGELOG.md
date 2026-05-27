@@ -2,6 +2,19 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.4.1] - 2026-05-27 — platform list tightened
+
+Manifest-only patch. No code or binary changes; the existing 0.4.0 xcframework is reused.
+
+### Changed
+
+- **`Package.swift` platforms narrowed to `macOS(.v13)` and `iOS(.v16)` only.** The previous declaration also listed `tvOS`, `watchOS`, and `visionOS` even though no slices for those platforms were ever shipped in the binary. Resolving against `0.4.0` from a tvOS/watchOS/visionOS target would link, then fail at runtime. Now SwiftPM rejects unsupported platforms at resolve time with a clear error.
+- The build script's default platform list (`scripts/build-xcframework.sh`) was reduced to match.
+
+### Coming back later
+
+tvOS, watchOS, and visionOS support will return once the upstream build matrix is restored. No ETA.
+
 ## [0.4.0] - 2026-05-26 — defensive-readiness hardening + lifecycle event notifications
 
 Patch against a 14-finding audit of the Swift SDK's behavior under current Worker contracts, plus a new lifecycle-event notification surface for apps that want to react to license state transitions. No wire-format changes; the factory grew three optional parameters whose defaults preserve existing behavior. **Breaking only for apps that explicitly opt into rotation** (see Migration). Apps that update without code changes get the bug fixes for free.
