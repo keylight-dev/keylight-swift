@@ -2,6 +2,48 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.4.0] - 2026-05-22
+
+Defensive-readiness hardening patch against a 14-finding audit of the Swift SDK's behavior under current Worker contracts. No wire-format changes; the factory grew three optional parameters whose defaults preserve existing behavior. **Apps that update without code changes get the bug fixes for free.**
+
+### Breaking (opt-in)
+
+- **`Keylight.manager(...)` factory adds `kid:`, `freeTierEnabled:`, and `maxOfflineDays:` parameters** (all with defaults — `"k1"`, `false`, `15`).
+  - `kid:` lets apps target a non-default signing key once tenant key rotation lands (0.5.0); today every tenant still uses `"k1"`, so omitting it is safe.
+  - `freeTierEnabled:` must be set to `true` if your dashboard has the keyless free tier enabled — otherwise post-trial users resolve to `.expired` (hard paywall) instead of `.freeTier` (degraded analytics).
+  - `maxOfflineDays:` exposes the previously-hidden 15-day offline cap; pass `nil` to disable it for air-gapped/field deployments.
+- **`KeylightConfiguration.init` now precondition-asserts** that `tenantId` and `productId` match `[a-z0-9_-]+`. A malformed identifier that previously misrouted URL requests now crashes loudly at init.
+
+### Added
+
+- **`LicenseManager.refreshIfNeeded()` recovers from `.limited` and `.expired`.** A user whose subscription lapses (→ `.limited`) and then renews via Stripe/Polar/Gumroad webhook now recovers automatically on the next foreground or scheduled refresh — no app relaunch required. Same for `.expired` after a refund reversal.
+- **`lease.status == "expired"` maps to `.expired`** (distinct from `.invalid`). The Worker's HTTP 422 hard-expiry path carries a signed `expired` lease that was previously discarded; the provider now opts 422 into body decoding so the manager can show "your license expired" rather than "your license is invalid."
+
+### Changed
+
+- **`checkOnLaunch()` on network failure resolves to `.limited`**, matching `performRefresh`'s offline-degraded philosophy. The prior behavior — flipping to `.invalid` — would show the paywall to a real user rebooting on an airplane. Now the user keeps running; the next refresh reconciles.
+- **`LeaseVerifier.verify(...)` uses `Int(floor(...))`** explicitly, matching the Worker's `Math.floor(Date.now() / 1000)` by name. Behavior identical for positive epoch timestamps.
+- **`LeaseVerifier.verify(...)` rejects leases with empty signatures** up front. The `StoreKitProvider.synthesizedLease` path produces these as a sentinel; the comment said "MUST NOT be passed to verify" but nothing enforced it.
+- **`KeylightProvider.getCachedLease()` no longer pre-filters on `lease.isExpired`** before the verifier — the verifier's 300-second skew tolerance is now the single gate, eliminating spurious re-validations inside the tolerance window.
+- **`KeylightProvider.hasStoredLicense()` re-verifies the lease signature** before re-populating Keychain from the file fallback. Tampered file leases are discarded rather than copied into the authoritative store.
+- **`KeylightProvider.deactivateLicense()` clears `timestamp.lastSeen`** so a stale clock anchor can't cause a false-positive "clock manipulated" verdict after a long pause + re-activation.
+- **`ActivateResponse.activated` and `ValidateResponse.valid` are non-optional Bool.** Both are always present on the Worker's 200 / 422 responses; making them non-optional surfaces contract drift as a loud decode error rather than a silent generic failure.
+- **XOR file-obfuscation comment** now states explicitly that the key is the same in every shipped build and provides no confidentiality. Tamper resistance comes from the Ed25519 lease signature, which is re-verified on every read.
+
+### Tests
+
+- 13 new tests in `PatchV04Tests.swift` covering every finding ID. 120 tests total (107 existing + 13 new), 0 failures.
+
+### Migration
+
+No code changes required for most apps — defaults preserve behavior.
+
+If your product has the keyless free tier enabled, **you must pass `freeTierEnabled: true`** to the factory. Without it, post-trial users see the paywall instead of the free-tier experience.
+
+### Deferred to 0.5.0
+
+- **Multi-key trust sets** for graceful Ed25519 signing-key rotation. Today rotating the Worker's signing key would break every shipped app — there's no overlap window. 0.5.0 will add a `trustedPublicKeys: [String: String]` overload so apps can pre-load the next key alongside the current one. Requires parallel Worker work (sign-with-current, accept-old-and-new). See the PR rotation discussion for the full design.
+
 ## [0.3.1] - 2026-04-19
 
 ### Added

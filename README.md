@@ -12,7 +12,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Halloweedev/keylight-swift.git", from: "0.3.0"),
+    .package(url: "https://github.com/Halloweedev/keylight-swift.git", from: "0.4.0"),
 ],
 targets: [
     .target(
@@ -26,5 +26,9 @@ targets: [
 
 ## Quickstart
 
-See the full integration guide at [keylight.dev/docs/integration-swift](https://keylight.dev/docs/integration-swift).
+See the full integration guide at [docs.keylight.dev/swift-sdk/install](https://docs.keylight.dev/swift-sdk/install/).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
