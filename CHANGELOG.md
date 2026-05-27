@@ -2,9 +2,9 @@
 
 All notable changes to Keylight are documented in this file.
 
-## [0.4.0] - 2026-05-22
+## [0.4.0] - 2026-05-26 — defensive-readiness hardening + lifecycle event notifications
 
-Defensive-readiness hardening patch against a 14-finding audit of the Swift SDK's behavior under current Worker contracts. No wire-format changes; the factory grew three optional parameters whose defaults preserve existing behavior. **Apps that update without code changes get the bug fixes for free.**
+Patch against a 14-finding audit of the Swift SDK's behavior under current Worker contracts, plus a new lifecycle-event notification surface for apps that want to react to license state transitions. No wire-format changes; the factory grew three optional parameters whose defaults preserve existing behavior. **Breaking only for apps that explicitly opt into rotation** (see Migration). Apps that update without code changes get the bug fixes for free.
 
 ### Breaking (opt-in)
 
@@ -33,6 +33,17 @@ Defensive-readiness hardening patch against a 14-finding audit of the Swift SDK'
 ### Tests
 
 - 13 new tests in `PatchV04Tests.swift` covering every finding ID. 120 tests total (107 existing + 13 new), 0 failures.
+
+### Lifecycle event notifications
+
+A new opt-in notification surface lets apps react to license state transitions — for example, dismissing a paywall when a renewal lands or showing a "thanks for renewing" message — without polling `LicenseManager.licenseState` themselves.
+
+- **`LicenseLifecycleEvent` enum** with three cases: `.expired`, `.restored`, `.renewed`. Posted via `NotificationCenter.default` on the `keylightLifecycleEvent` notification name. The event value lives under the `lifecycleEvent` userInfo key.
+- **`.expired`** fires when an active license (`.licensed` / `.trial`) transitions to a denying state (`.expired` / `.limited` / `.invalid`). **Suppressed on the very first `applyState` of a session** so cold-start paths like trial-elapsed-before-launch don't paywall users who never had a subscription. **Suppressed on `deactivate()`** — user-initiated deactivation is not an expiry signal.
+- **`.restored`** fires when a denying state (`.expired` / `.limited` / `.invalid`) transitions back to `.licensed` or `.trial`. Also suppressed on first-launch.
+- **`.renewed`** fires when an already-licensed user's expiry advances (new expiry > old expiry, or `Date → nil` for a lifetime upgrade). The userInfo includes `previousLicenseExpiresAt` and `newLicenseExpiresAt` (the latter omitted on lifetime upgrades). Baseline is owned by the refresh task and accumulates across runs, so back-to-back renewals don't drop the first one.
+- **Stale entitlements cleared on deny.** `currentEntitlements` is now forced to `[]` on `.expired` / `.invalid` / `.freeTier`, even if the provider's cache still holds the prior lease. `.trial` continues to honor lease entitlements (paid-tier trials and beta-feature gates).
+- 14 new tests in `LifecycleEventNotificationTests.swift` covering all three event types, first-launch suppression, deactivate suppression, lifetime-upgrade renewal detection, and the back-to-back race. **134/134 tests passing.**
 
 ### Migration
 
