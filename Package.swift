@@ -16,8 +16,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "KeylightSDK",
-            url: "https://github.com/Halloweedev/keylight-binaries/releases/download/0.4.0/KeylightSDK.xcframework.zip",
-            checksum: "88067175a29148857d514f5749e46715d0d4cd8ad8867057911c5c55684986ca"
+            url: "https://github.com/Halloweedev/keylight-binaries/releases/download/0.5.0/KeylightSDK.xcframework.zip",
+            checksum: "522a54ddf4b1aaf9fff19b48828b4bbc3cb36fa0ee053839d903445ae02da34d"
         ),
     ]
 )
