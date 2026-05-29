@@ -2,6 +2,24 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.5.0] - 2026-05-29 — remove the hosted upgrade-URL helper
+
+**Breaking.** `LicenseManager.upgradeURL(to:)` and the `makeUpgradeURL(...)` free function are removed. They built a link to Keylight's hosted upgrade page (`/p/<tenant>/upgrade/<product>`), which has been retired — customers now upgrade from the signed-in customer portal. That page already returns 404, so any in-app "Upgrade" button wired to `upgradeURL` was already failing at runtime; this release turns the dead call into a compile error so you catch it.
+
+### Removed
+
+- `LicenseManager.upgradeURL(to:)`
+- `makeUpgradeURL(origin:tenantId:productId:licenseKey:targetKeyTypeId:)`
+
+### Migration
+
+- Point your in-app "Upgrade" button at the customer portal: open `https://portal.keylight.dev`. The customer signs in (magic link to the email on their license) and upgrades from their license detail — no key re-entry.
+- A native in-app upgrade flow (no browser hop) is planned and will build on the existing `/upgrade-session` endpoint.
+
+### Unchanged
+
+- No wire-format changes. `getCachedLicenseKey()` stays on `LicenseProvider`.
+
 ## [0.4.1] - 2026-05-27 — platform list tightened
 
 Manifest-only patch. No code or binary changes; the existing 0.4.0 xcframework is reused.
