@@ -2,6 +2,31 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.6.0] - 2026-06-01 — device-bound encrypted-file storage (no Keychain popup)
+
+License state now lives in a **device-bound encrypted file** by default, and the Keychain is left untouched — so the OS no longer shows a Keychain permission prompt on first launch. This is the new default; no code change is required to get it.
+
+### Added
+
+- `StorageBackend` configuration enum with two cases:
+  - `.encryptedFile(keychainMirror: Bool = false)` — **new default**. The license/trial blob is sealed with a key derived from the device identity, your `tenantId`, and `productId`, and stored under Application Support. The Keychain is never read or written, so there is no first-launch popup. Pass `keychainMirror: true` to also keep a Keychain recovery copy.
+  - `.keychain` — legacy behavior: the Keychain is authoritative, with the encrypted file as a crash-recovery fallback.
+- `KeylightConfiguration.storage: StorageBackend` initializer parameter (defaults to `.encryptedFile()`).
+
+### Changed
+
+- **Default storage backend is now `.encryptedFile()`** instead of Keychain-authoritative. Existing on-disk license/trial state is migrated automatically and popup-free: on first load the SDK reads the legacy files, re-seals them into the encrypted file, and deletes the originals. Migrated installs keep their license — no re-activation.
+
+### Migration
+
+- **Most apps: nothing to do.** The new default removes the first-launch Keychain prompt and migrates existing on-disk state automatically.
+- If you relied on license state living in the **Keychain** specifically (e.g. you read it outside the SDK, or want Keychain sync/restore), set `storage: .encryptedFile(keychainMirror: true)` to keep a Keychain copy, or `storage: .keychain` to retain the previous default.
+- On platforms without Application Support (e.g. watchOS) or when a stable device ID is unavailable, the SDK transparently falls back to the Keychain — it never locks the user out.
+
+### Unchanged
+
+- No wire-format or server changes. Lease signing/verification and the public `LicenseManager` / provider surface are the same.
+
 ## [0.5.0] - 2026-05-29 — remove the hosted upgrade-URL helper
 
 **Breaking.** `LicenseManager.upgradeURL(to:)` and the `makeUpgradeURL(...)` free function are removed. They built a link to Keylight's hosted upgrade page (`/p/<tenant>/upgrade/<product>`), which has been retired — customers now upgrade from the signed-in customer portal. That page already returns 404, so any in-app "Upgrade" button wired to `upgradeURL` was already failing at runtime; this release turns the dead call into a compile error so you catch it.
