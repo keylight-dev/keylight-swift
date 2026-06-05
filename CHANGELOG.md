@@ -2,6 +2,35 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.7.0] - 2026-06-05 — keyless funnel reporting + trial / free-tier / expired state fixes
+
+The SDK now treats **trial**, **free tier**, and **expired** as distinct states, and reports an anonymous keyless lifecycle signal so Keylight can show a conversion funnel. Most apps update with no code changes; the two behavior changes below are fixes for free-tier-enabled products.
+
+### Added
+
+- **`reportKeylessState(_:)`** — an anonymous, debounced, fire-and-forget heartbeat that reports the device's keyless state (`.trial` / `.freeTier` / `.expired`). `LicenseManager` sends it automatically on state transitions to power a *trials started → converted / in free tier / expired* funnel, with conversions attributed to the prior state. You don't call it yourself.
+- **`KeylessReportState`** enum (`.trial`, `.freeTier`, `.expired`).
+- `LicenseProvider.reportKeylessState(_:)` — a protocol requirement with a **no-op default**, so custom providers compile unchanged.
+
+### Changed
+
+- **Free-tier devices are counted on launch #1.** On a product with `trialDurationDays: 0` and free tier enabled, a brand-new keyless install now resolves to `.freeTier` on the first launch. Previously it spent the first session in a degenerate `.trial(daysLeft: 0)` and only became `.freeTier` on launch #2.
+- **`deactivate()` on a free-tier product now resolves to `.freeTier`** (previously `.expired`) — releasing a paid seat drops the user to the free tier they're entitled to, rather than the paywall.
+- The anonymous instance ID is now generated at **trial start** (so trial devices remain attributable if they later convert). `checkTrialStatus()` stays trial-only and truthful.
+
+### Deprecated
+
+- **`reportFreeTier()`** — now a thin wrapper for `reportKeylessState(.freeTier)`. It still works; no action needed (it's normally invoked by the SDK, not your code).
+
+### Migration
+
+- **Most apps: nothing to do.** Both behavior changes are improvements and need no code change; reporting is automatic.
+- Custom `LicenseProvider` conformers: `reportKeylessState(_:)` ships with a default no-op implementation — you won't get a build break. Implement it only if you wrap/proxy provider calls and want to forward the signal.
+
+### Unchanged
+
+- No wire-format or lease changes. `TrialStatus`'s public cases are unchanged.
+
 ## [0.6.0] - 2026-06-01 — device-bound encrypted-file storage (no Keychain popup)
 
 License state now lives in a **device-bound encrypted file** by default, and the Keychain is left untouched — so the OS no longer shows a Keychain permission prompt on first launch. This is the new default; no code change is required to get it.
