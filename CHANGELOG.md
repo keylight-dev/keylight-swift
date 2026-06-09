@@ -2,6 +2,23 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.8.0] - 2026-06-07 — choose your storage backend from the factory
+
+The one-call factory now lets you pick the storage backend directly, so the 0.6.0 storage options no longer require hand-building a `KeylightConfiguration`.
+
+### Added
+
+- **`storage:` parameter on `Keylight.manager(...)`** — optional, defaults to `.encryptedFile()` (the existing behavior). Pass `.encryptedFile(keychainMirror: true)` to also keep a Keychain recovery copy, or `.keychain` for the legacy Keychain-authoritative backend. It forwards straight to `KeylightConfiguration.storage`.
+
+### Migration
+
+- **Most apps: nothing to do.** The parameter is optional and defaults to the current behavior — omit it and nothing changes.
+- If you previously hand-built a `KeylightConfiguration` *only* to set `storage`, you can drop that and pass `storage:` to the factory instead.
+
+### Unchanged
+
+- No wire-format, lease, or behavior changes. The default storage backend is still the device-bound encrypted file (no Keychain popup), and existing on-disk state still migrates automatically.
+
 ## [0.7.0] - 2026-06-05 — keyless funnel reporting + trial / free-tier / expired state fixes
 
 The SDK now treats **trial**, **free tier**, and **expired** as distinct states, and reports an anonymous keyless lifecycle signal so Keylight can show a conversion funnel. Most apps update with no code changes; the two behavior changes below are fixes for free-tier-enabled products.
