@@ -2,6 +2,31 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.8.1] - 2026-06-10 — version telemetry (app, SDK, platform)
+
+The SDK now attaches lightweight, anonymous version telemetry to its network
+calls, so your Keylight dashboard can break activations and validations down by
+app version, SDK version, and platform. Automatic — no API changes and nothing
+to call.
+
+### Added
+
+- The SDK now sends three optional fields on `activate`, `validate`, and the
+  anonymous keyless beacon:
+  - `app_version` — your app's `CFBundleShortVersionString` (when available)
+  - `sdk_version` — the Keylight SDK version
+  - `platform` — `macOS`, `iOS`, `watchOS`, `tvOS`, or `visionOS`
+- `KeylightProvider.sdkVersion` — the current SDK version string constant.
+
+### Migration
+
+- Nothing to do. The fields are added automatically; no source changes, and no
+  wire-format or lease changes.
+
+### Unchanged
+
+- No behavior, lease, or public-API changes beyond the added request fields.
+
 ## [0.8.0] - 2026-06-07 — choose your storage backend from the factory
 
 The one-call factory now lets you pick the storage backend directly, so the 0.6.0 storage options no longer require hand-building a `KeylightConfiguration`.
