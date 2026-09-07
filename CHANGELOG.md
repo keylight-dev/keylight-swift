@@ -2,6 +2,22 @@
 
 All notable changes to Keylight are documented in this file.
 
+## [0.12.1] - 2026-09-07 — `requireSignedConfig` actually reaches the factory
+
+A bug-fix release. 0.12.0 shipped signed-settings verification, but
+`Keylight.manager(...)` could not turn it on — upgrade if you are on 0.12.0 and
+want it.
+
+### Fixed
+
+- **`requireSignedConfig` is a parameter of `Keylight.manager(...)`.** It
+  existed on `KeylightConfiguration` and was fully tested on the provider, but
+  the factory — the only entry point the README shows — never exposed it, so
+  the verification 0.12.0 announced was unreachable without abandoning the
+  factory and hand-building the configuration, provider and manager. It is now
+  a trailing parameter, defaulting to `false` as before, and pinned by a test
+  that drives enforcement through the manager rather than the provider.
+
 ## [0.12.0] - 2026-09-06 — verify that your settings really came from your dashboard
 
 One addition, off by default, and nothing to do in your app unless you want it.
@@ -11,8 +27,8 @@ One addition, off by default, and nothing to do in your app unless you want it.
 - **`requireSignedConfig` — Ed25519 verification of server-owned product
   settings.** The Keylight worker has signed the trial length and free-tier
   flag on every route that delivers them since 2026-09-06. Until now nothing in
-  this SDK checked those signatures. `ConfigVerifier` now does, over the payload
-  format shared by every Keylight SDK.
+  this SDK checked those signatures. It now does, over the payload format
+  shared by every Keylight SDK.
 
   **It is off by default, and should stay off unless you know your product is
   signed.** The worker signs a product's settings only once that product has a

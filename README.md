@@ -51,7 +51,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/keylight-dev/keylight-swift.git", from: "0.11.1"),
+    .package(url: "https://github.com/keylight-dev/keylight-swift.git", from: "0.12.0"),
 ],
 targets: [
     .target(
@@ -129,6 +129,40 @@ await license.deactivate()
 ```
 
 Full integration guide: [docs.keylight.dev/swift-sdk/install](https://docs.keylight.dev/swift-sdk/install/).
+
+## Verifying server-owned settings
+
+The trial length and free-tier flag your app applies come from the dashboard
+(see *Free trials* above). The Keylight worker signs those settings with your
+tenant key, and the SDK can refuse any that do not verify:
+
+```swift
+static let manager = try! Keylight.manager(
+    // ...
+    trustedPublicKeyBase64: "...",   // the key the signatures are checked against
+    requireSignedConfig: true
+)
+```
+
+- **Off by default.** The worker signs a product's settings only once that
+  product has a trial length configured in the dashboard; every other product
+  is served unsigned. Turn this on only when your product is signed — enabling
+  it for an unsigned product rejects legitimate responses and pins the install
+  to the `trialDurationDays` seed you compiled in.
+- **Settings that do not verify are never cached.** The SDK keeps your seed
+  rather than trusting what the server claimed, on every route the settings
+  ride on.
+- **Keys are compiled in, never fetched.** Verification is rooted in
+  `trustedPublicKeyBase64` (or `trustedPublicKeys` if you build a
+  `KeylightConfiguration` yourself). The SDK deliberately does not download a
+  keyset at runtime: keys fetched over the same connection that serves the
+  settings would let anyone able to forge one forge the other.
+- **Rotation freezes, it does not break.** If you rotate to a new key id,
+  builds already in the wild keep their last known settings until you ship an
+  update with the new key.
+
+This protects the network path, not the device — it stops settings being
+altered in transit, not someone editing your app's binary.
 
 ## How it compares
 
